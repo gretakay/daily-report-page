@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>每日修行回報</title>
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background-color: #f9f6f2;
+      color: #333;
+      text-align: center;
+      padding: 2rem;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1.5rem;
+    }
+    button {
+      font-size: 1.2rem;
+      margin: 0.5rem;
+      padding: 1rem 2rem;
+      border: none;
+      border-radius: 12px;
+      background-color: #9fc5e8;
+      cursor: pointer;
+    }
+    #status {
+      margin-top: 2rem;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>每日修行回報</h1>
+  <button onclick="submitReport('誦經')">✅ 我今天有誦經3部</button>
+  <button onclick="submitReport('靜坐')">✅ 我今天有靜坐30分鐘</button>
+  <button onclick="submitReport('發願/反省')">✅ 我今天已發願反省</button>
+
+  <div id="status"></div>
+
+  <script>
+    const SHEET_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw8iICKAWwobov4npmikocR8-wxJUjN1nG1PQAPXimLGBQOa4edDWeO2Fwy5zlqgzC_hw/exec;
+
+    function submitReport(item) {
+      const name = prompt("請輸入您的名字：");
+      if (!name) return;
+
+      const payload = {
+        name: name,
+        item: item,
+        timestamp: new Date().toISOString()
+      };
+
+      fetch(SHEET_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      document.getElementById('status').textContent = `已回報：${item}`;
+    }
+  </script>
+</body>
+</html>
