@@ -34,13 +34,27 @@
       max-width: 100%;
       margin: 1rem auto;
     }
+    .hidden {
+      display: none;
+    }
+    label {
+      font-size: 1.1rem;
+      display: block;
+      margin: 1rem 0 0.5rem;
+    }
   </style>
 </head>
 <body>
   <h1>每日修行回報</h1>
-  <button onclick="submitReport('誦經')">✅ 我今天有誦經3部</button>
-  <button onclick="submitReport('打坐')">✅ 我今天有打坐30分鐘</button>
-  <button onclick="submitReport('發願/反省')">✅ 我今天已發願反省</button>
+
+  <label for="username">請輸入您的名字：</label>
+  <input type="text" id="username" placeholder="例如：淨明">
+
+  <div id="buttons" class="hidden">
+    <button onclick="submitReport('誦經', this)">✅ 我今天有誦經3部</button>
+    <button onclick="submitReport('打坐', this)">✅ 我今天有打坐30分鐘</button>
+    <button onclick="submitReport('發願/反省', this)">✅ 我今天已發願反省</button>
+  </div>
 
   <div id="status"></div>
 
@@ -54,9 +68,14 @@
   <script>
     const SHEET_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxKn6guh8dJkXP4Wy67kmLJBOev5HGMaLgc3YFK_QlCWVWrL_7JWgnmVO7LtPRGTfyvqA/exec';
 
-    function submitReport(item) {
-      const name = prompt("請輸入您的名字：");
-      if (!name) return;
+    document.getElementById('username').addEventListener('input', function () {
+      const val = this.value.trim();
+      document.getElementById('buttons').classList.toggle('hidden', val === '');
+    });
+
+    function submitReport(item, buttonEl) {
+      const name = document.getElementById('username').value.trim();
+      if (!name) return alert("請先輸入名字！");
 
       const payload = {
         name: name,
@@ -73,6 +92,8 @@
         body: JSON.stringify(payload)
       });
 
+      buttonEl.textContent = `✅ 已回報：${item}`;
+      buttonEl.disabled = true;
       document.getElementById('status').textContent = `已回報：${item}`;
     }
 
