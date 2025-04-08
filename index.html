@@ -63,9 +63,9 @@
   <button id="startBtn">👉 開始回報</button>
 
   <div id="buttons" class="hidden">
-    <button onclick="submitReport('誦經', this)">✅ 我今天有誦經3部</button>
-    <button onclick="submitReport('打坐', this)">✅ 我今天有打坐30分鐘</button>
-    <button onclick="submitReport('發願/反省', this)">✅ 我今天已發願反省</button>
+    <button id="btn1" onclick="submitReport('誦經', this)">✅ 我今天有誦經3部</button>
+    <button id="btn2" onclick="submitReport('打坐', this)">✅ 我今天有打坐30分鐘</button>
+    <button id="btn3" onclick="submitReport('發願/反省', this)">✅ 我今天已發願反省</button>
   </div>
 
   <div id="status"></div>
@@ -75,11 +75,27 @@
   <canvas id="statsChart" width="400" height="200"></canvas>
 
   <h2>🏆 本週排行榜</h2>
-  <ol id="rankingList"></ol>
+  <h3>誦經</h3>
+  <ol id="rank-誦經"></ol>
+  <h3>打坐</h3>
+  <ol id="rank-打坐"></ol>
+  <h3>發願/反省</h3>
+  <ol id="rank-發願/反省"></ol>
 
   <script>
-    const SHEET_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyp-LDvMOvvPetFGizDtiNuAGYag8up3m1ttLxNWpWroL31PkZJsm5Pc6zLCp0hqmpe-Q/exec';
+    const SHEET_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxqiD02FiieZll8j5_FA1BctKP8AITHHAAJonTXf-MeILxrs4WrY1H7xlP4wXbZ5ztG9w/exec';
     const today = new Date().toISOString().split('T')[0];
+
+    let lastActiveTime = Date.now();
+    setInterval(() => {
+      if (Date.now() - lastActiveTime > 60 * 1000) {
+        location.reload();
+      }
+    }, 10000);
+
+    document.addEventListener('mousemove', () => lastActiveTime = Date.now());
+    document.addEventListener('keydown', () => lastActiveTime = Date.now());
+    document.addEventListener('click', () => lastActiveTime = Date.now());
 
     document.getElementById('startBtn').addEventListener('click', function () {
       const name = document.getElementById('username').value.trim();
@@ -105,6 +121,12 @@
       const name = document.getElementById('username').value.trim();
       if (!name) return alert("請先輸入名字！");
 
+      const key = `${today}:${name}:${item}`;
+      if (localStorage.getItem(key)) {
+        alert("今天已經回報過「" + item + "」囉！");
+        return;
+      }
+
       const payload = {
         name: name,
         item: item,
@@ -122,7 +144,7 @@
 
       buttonEl.textContent = `✅ 已回報：${item}`;
       buttonEl.disabled = true;
-      localStorage.setItem(`${today}:${name}:${item}`, 'true');
+      localStorage.setItem(key, 'true');
       document.getElementById('status').textContent = `已回報：${item}`;
     }
 
@@ -147,11 +169,14 @@
           }
         });
 
-        const rankList = document.getElementById('rankingList');
-        data.rankings.forEach(item => {
-          const li = document.createElement('li');
-          li.textContent = `${item.name}：${item.count} 次`;
-          rankList.appendChild(li);
+        ['誦經', '打坐', '發願/反省'].forEach(item => {
+          const list = document.getElementById(`rank-${item}`);
+          list.innerHTML = '';
+          (data.rankings[item] || []).forEach(entry => {
+            const li = document.createElement('li');
+            li.textContent = `${entry.name}：${entry.count} 次`;
+            list.appendChild(li);
+          });
         });
       } catch (err) {
         console.error('讀取統計資料失敗', err);
