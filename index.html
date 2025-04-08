@@ -83,7 +83,7 @@
   <ol id="rank-發願/反省"></ol>
 
   <script>
-    const SHEET_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwpKmTzDrQqCEor8iE7rW69X_1jc3_liY9ETRAGPdgDvAdTOh_dOsdhcxOhVfXACr7VYQ/exec';
+    const SHEET_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwGg7fZdmNPVeQTNg7wFQMCiM5BnEAiq8J_uQw7kcyiVenWGlQNcSS8cIWHRm3-wfUrRA/exec';
     const today = new Date().toISOString().split('T')[0];
 
     let lastActiveTime = Date.now();
@@ -113,13 +113,11 @@
           const btn = [...document.querySelectorAll('#buttons button')].find(b => b.textContent.includes(item));
           const key = `${today}:${name}:${item}`;
 
-          // 清除舊狀態
           if (btn) {
             btn.textContent = `✅ 我今天有${item}${item === '誦經' ? '3部' : item === '打坐' ? '30分鐘' : ''}`;
             btn.disabled = false;
           }
 
-          // 若後端確認已回報，或 localStorage 有記錄，則標記為已回報
           if ((serverData.reported || []).includes(item) || localStorage.getItem(key)) {
             if (btn) {
               btn.textContent = `✅ 已回報：${item}`;
