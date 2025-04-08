@@ -59,7 +59,7 @@
   <h1>每日用功回報</h1>
 
   <label for="username">請輸入您的名字：</label>
-  <input type="text" id="username" placeholder="例如：傳愉">
+  <input type="text" id="username" placeholder="例如：淨明">
   <button id="startBtn">👉 開始回報</button>
 
   <div id="buttons" class="hidden">
@@ -89,7 +89,6 @@
       this.disabled = true;
       document.getElementById('buttons').classList.remove('hidden');
 
-      // 檢查 localStorage 中是否已回報
       ['誦經', '打坐', '發願/反省'].forEach(item => {
         const key = `${today}:${name}:${item}`;
         if (localStorage.getItem(key)) {
@@ -121,7 +120,6 @@
         body: JSON.stringify(payload)
       });
 
-      // 成功後處理按鈕與狀態
       buttonEl.textContent = `✅ 已回報：${item}`;
       buttonEl.disabled = true;
       localStorage.setItem(`${today}:${name}:${item}`, 'true');
