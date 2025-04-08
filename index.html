@@ -59,7 +59,7 @@
   <h1>每日用功回報</h1>
 
   <label for="username">請輸入您的法名：</label>
-  <input type="text" id="username" placeholder="例如：傳愉">
+  <input type="text" id="username" placeholder="例如：傳愉" autocomplete="off" name="no-auto">
   <button id="startBtn">👉 開始回報</button>
 
   <div id="buttons" class="hidden">
@@ -83,7 +83,7 @@
   <ol id="rank-發願/反省"></ol>
 
   <script>
-    const SHEET_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxqiD02FiieZll8j5_FA1BctKP8AITHHAAJonTXf-MeILxrs4WrY1H7xlP4wXbZ5ztG9w/exec';
+    const SHEET_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwpKmTzDrQqCEor8iE7rW69X_1jc3_liY9ETRAGPdgDvAdTOh_dOsdhcxOhVfXACr7VYQ/exec';
     const today = new Date().toISOString().split('T')[0];
 
     let lastActiveTime = Date.now();
@@ -97,7 +97,7 @@
     document.addEventListener('keydown', () => lastActiveTime = Date.now());
     document.addEventListener('click', () => lastActiveTime = Date.now());
 
-    document.getElementById('startBtn').addEventListener('click', function () {
+    document.getElementById('startBtn').addEventListener('click', async function () {
       const name = document.getElementById('username').value.trim();
       if (!name) return alert("請先輸入名字！");
 
@@ -105,16 +105,32 @@
       this.disabled = true;
       document.getElementById('buttons').classList.remove('hidden');
 
-      ['誦經', '打坐', '發願/反省'].forEach(item => {
-        const key = `${today}:${name}:${item}`;
-        if (localStorage.getItem(key)) {
+      try {
+        const res = await fetch(SHEET_SCRIPT_URL + `?checkName=${encodeURIComponent(name)}`);
+        const serverData = await res.json();
+
+        ['誦經', '打坐', '發願/反省'].forEach(item => {
           const btn = [...document.querySelectorAll('#buttons button')].find(b => b.textContent.includes(item));
+          const key = `${today}:${name}:${item}`;
+
+          // 清除舊狀態
           if (btn) {
-            btn.textContent = `✅ 已回報：${item}`;
-            btn.disabled = true;
+            btn.textContent = `✅ 我今天有${item}${item === '誦經' ? '3部' : item === '打坐' ? '30分鐘' : ''}`;
+            btn.disabled = false;
           }
-        }
-      });
+
+          // 若後端確認已回報，或 localStorage 有記錄，則標記為已回報
+          if ((serverData.reported || []).includes(item) || localStorage.getItem(key)) {
+            if (btn) {
+              btn.textContent = `✅ 已回報：${item}`;
+              btn.disabled = true;
+              localStorage.setItem(key, 'true');
+            }
+          }
+        });
+      } catch (err) {
+        console.error('無法同步後端資料', err);
+      }
     });
 
     function submitReport(item, buttonEl) {
@@ -135,12 +151,20 @@
 
       fetch(SHEET_SCRIPT_URL, {
         method: 'POST',
-        mode: 'no-cors',
+        mode: 'cors',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(payload)
-      });
+      })
+      .then(res => res.text())
+      .then(text => {
+        if (text === 'DUPLICATE') {
+          alert('你今天已經回報過這項目囉！');
+          return;
+        }
+      })
+      .catch(err => console.error('回報失敗', err));
 
       buttonEl.textContent = `✅ 已回報：${item}`;
       buttonEl.disabled = true;
