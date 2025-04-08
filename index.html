@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>每日修行回報</title>
   <link rel="manifest" href="/manifest.json">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: 'Noto Sans TC', sans-serif;
@@ -30,18 +31,29 @@
       margin-top: 2rem;
       font-weight: bold;
     }
+    canvas {
+      max-width: 100%;
+      margin: 1rem auto;
+    }
   </style>
 </head>
 <body>
   <h1>每日修行回報</h1>
   <button onclick="submitReport('誦經')">✅ 我今天有誦經3部</button>
-  <button onclick="submitReport('靜坐')">✅ 我今天有靜坐30分鐘</button>
+  <button onclick="submitReport('打坐')">✅ 我今天有打坐30分鐘</button>
   <button onclick="submitReport('發願/反省')">✅ 我今天已發願反省</button>
 
   <div id="status"></div>
 
+  <hr>
+  <h2>📊 今日統計</h2>
+  <canvas id="statsChart" width="400" height="200"></canvas>
+
+  <h2>🏆 本週排行榜</h2>
+  <ol id="rankingList"></ol>
+
   <script>
-    const SHEET_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw8iICKAWwobov4npmikocR8-wxJUjN1nG1PQAPXimLGBQOa4edDWeO2Fwy5zlqgzC_hw/exec;
+    const SHEET_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxKn6guh8dJkXP4Wy67kmLJBOev5HGMaLgc3YFK_QlCWVWrL_7JWgnmVO7LtPRGTfyvqA/exec';
 
     function submitReport(item) {
       const name = prompt("請輸入您的名字：");
@@ -64,6 +76,40 @@
 
       document.getElementById('status').textContent = `已回報：${item}`;
     }
+
+    async function loadStats() {
+      try {
+        const res = await fetch(SHEET_SCRIPT_URL);
+        const data = await res.json();
+
+        new Chart(document.getElementById('statsChart'), {
+          type: 'bar',
+          data: {
+            labels: ['誦經', '打坐', '發願/反省'],
+            datasets: [{
+              label: '今日人數',
+              data: [
+                data.stats['誦經'] || 0,
+                data.stats['打坐'] || 0,
+                data.stats['發願/反省'] || 0
+              ],
+              backgroundColor: ['#ffd966', '#93c47d', '#9fc5e8']
+            }]
+          }
+        });
+
+        const rankList = document.getElementById('rankingList');
+        data.rankings.forEach(item => {
+          const li = document.createElement('li');
+          li.textContent = `${item.name}：${item.count} 次`;
+          rankList.appendChild(li);
+        });
+      } catch (err) {
+        console.error('讀取統計資料失敗', err);
+      }
+    }
+
+    loadStats();
   </script>
 </body>
 </html>
