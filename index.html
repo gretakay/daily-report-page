@@ -26,8 +26,12 @@
       background-color: #9fc5e8;
       cursor: pointer;
     }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
     #status {
-      margin-top: 2rem;
+      margin-top: 1.5rem;
       font-weight: bold;
     }
     canvas {
@@ -45,10 +49,11 @@
   </style>
 </head>
 <body>
-  <h1>每日修行回報</h1>
+  <h1>每日用功回報</h1>
 
   <label for="username">請輸入您的名字：</label>
-  <input type="text" id="username" placeholder="例如：淨明">
+  <input type="text" id="username" placeholder="例如：傳愉">
+  <button id="startBtn">👉 開始回報</button>
 
   <div id="buttons" class="hidden">
     <button onclick="submitReport('誦經', this)">✅ 我今天有誦經3部</button>
@@ -66,11 +71,28 @@
   <ol id="rankingList"></ol>
 
   <script>
-    const SHEET_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxKn6guh8dJkXP4Wy67kmLJBOev5HGMaLgc3YFK_QlCWVWrL_7JWgnmVO7LtPRGTfyvqA/exec';
+    const SHEET_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw8MH2hJTQqFpHWh17hHpuqkpvJw5-MPh-puHFa017tUm1w8fv5AqYRANUgm5HSYgQGog/exec';
+    const today = new Date().toISOString().split('T')[0];
 
-    document.getElementById('username').addEventListener('input', function () {
-      const val = this.value.trim();
-      document.getElementById('buttons').classList.toggle('hidden', val === '');
+    document.getElementById('startBtn').addEventListener('click', function () {
+      const name = document.getElementById('username').value.trim();
+      if (!name) return alert("請先輸入名字！");
+
+      document.getElementById('username').disabled = true;
+      this.disabled = true;
+      document.getElementById('buttons').classList.remove('hidden');
+
+      // 檢查 localStorage 中是否已回報
+      ['誦經', '打坐', '發願/反省'].forEach(item => {
+        const key = `${today}:${name}:${item}`;
+        if (localStorage.getItem(key)) {
+          const btn = [...document.querySelectorAll('#buttons button')].find(b => b.textContent.includes(item));
+          if (btn) {
+            btn.textContent = `✅ 已回報：${item}`;
+            btn.disabled = true;
+          }
+        }
+      });
     });
 
     function submitReport(item, buttonEl) {
@@ -92,8 +114,10 @@
         body: JSON.stringify(payload)
       });
 
+      // 成功後處理按鈕與狀態
       buttonEl.textContent = `✅ 已回報：${item}`;
       buttonEl.disabled = true;
+      localStorage.setItem(`${today}:${name}:${item}`, 'true');
       document.getElementById('status').textContent = `已回報：${item}`;
     }
 
