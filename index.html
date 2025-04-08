@@ -59,7 +59,7 @@
   <h1>每日用功回報</h1>
 
   <label for="username">請輸入您的法名：</label>
-  <input type="text" id="username" placeholder="例如：傳愉" autocomplete="off" name="no-auto">
+  <input type="text" id="username" placeholder="例如：傳愉">
   <button id="startBtn">👉 開始回報</button>
 
   <div id="buttons" class="hidden">
@@ -83,7 +83,7 @@
   <ol id="rank-發願/反省"></ol>
 
   <script>
-    const SHEET_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzgb1_aidXfICCrw7PWhXRg5PXizrAAKk8OMtDzSU4Wo9ijXtb1bJP44FplfwtaOZDqGg/exec';
+    const SHEET_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxqiD02FiieZll8j5_FA1BctKP8AITHHAAJonTXf-MeILxrs4WrY1H7xlP4wXbZ5ztG9w/exec';
     const today = new Date().toISOString().split('T')[0];
 
     let lastActiveTime = Date.now();
@@ -105,15 +105,10 @@
       this.disabled = true;
       document.getElementById('buttons').classList.remove('hidden');
 
-      // 重新初始化狀態避免 button 沒有清空殘留（修正 bug）
       ['誦經', '打坐', '發願/反省'].forEach(item => {
-        const btn = [...document.querySelectorAll('#buttons button')].find(b => b.textContent.includes(item));
-        if (btn) {
-          btn.textContent = `✅ 我今天有${item}${item === '誦經' ? '3部' : item === '打坐' ? '30分鐘' : ''}`;
-          btn.disabled = false;
-        }
         const key = `${today}:${name}:${item}`;
         if (localStorage.getItem(key)) {
+          const btn = [...document.querySelectorAll('#buttons button')].find(b => b.textContent.includes(item));
           if (btn) {
             btn.textContent = `✅ 已回報：${item}`;
             btn.disabled = true;
@@ -140,20 +135,12 @@
 
       fetch(SHEET_SCRIPT_URL, {
         method: 'POST',
-        mode: 'cors',
+        mode: 'no-cors',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(payload)
-      })
-      .then(res => res.text())
-      .then(text => {
-        if (text === 'DUPLICATE') {
-          alert('你今天已經回報過這項目囉！');
-          return;
-        }
-      })
-      .catch(err => console.error('回報失敗', err));
+      });
 
       buttonEl.textContent = `✅ 已回報：${item}`;
       buttonEl.disabled = true;
