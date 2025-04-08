@@ -105,10 +105,15 @@
       this.disabled = true;
       document.getElementById('buttons').classList.remove('hidden');
 
+      // 重新初始化狀態避免 button 沒有清空殘留（修正 bug）
       ['誦經', '打坐', '發願/反省'].forEach(item => {
+        const btn = [...document.querySelectorAll('#buttons button')].find(b => b.textContent.includes(item));
+        if (btn) {
+          btn.textContent = `✅ 我今天有${item}${item === '誦經' ? '3部' : item === '打坐' ? '30分鐘' : ''}`;
+          btn.disabled = false;
+        }
         const key = `${today}:${name}:${item}`;
         if (localStorage.getItem(key)) {
-          const btn = [...document.querySelectorAll('#buttons button')].find(b => b.textContent.includes(item));
           if (btn) {
             btn.textContent = `✅ 已回報：${item}`;
             btn.disabled = true;
