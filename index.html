@@ -107,6 +107,7 @@
 
       try {
         const res = await fetch(SHEET_SCRIPT_URL + `?checkName=${encodeURIComponent(name)}`);
+        if (!res.ok) throw new Error('後端回應失敗');
         const serverData = await res.json();
 
         ['誦經', '打坐', '發願/反省'].forEach(item => {
@@ -128,6 +129,7 @@
         });
       } catch (err) {
         console.error('無法同步後端資料', err);
+        alert('無法同步後端資料，請稍後再試！');
       }
     });
 
@@ -155,24 +157,30 @@
         },
         body: JSON.stringify(payload)
       })
-      .then(res => res.text())
+      .then(res => {
+        if (!res.ok) throw new Error('後端回應失敗');
+        return res.text();
+      })
       .then(text => {
         if (text === 'DUPLICATE') {
           alert('你今天已經回報過這項目囉！');
           return;
         }
+        buttonEl.textContent = `✅ 已回報：${item}`;
+        buttonEl.disabled = true;
+        localStorage.setItem(key, 'true');
+        document.getElementById('status').textContent = `已回報：${item}`;
       })
-      .catch(err => console.error('回報失敗', err));
-
-      buttonEl.textContent = `✅ 已回報：${item}`;
-      buttonEl.disabled = true;
-      localStorage.setItem(key, 'true');
-      document.getElementById('status').textContent = `已回報：${item}`;
+      .catch(err => {
+        console.error('回報失敗', err);
+        alert('回報失敗，請稍後再試！');
+      });
     }
 
     async function loadStats() {
       try {
         const res = await fetch(SHEET_SCRIPT_URL);
+        if (!res.ok) throw new Error('後端回應失敗');
         const data = await res.json();
 
         new Chart(document.getElementById('statsChart'), {
@@ -202,6 +210,7 @@
         });
       } catch (err) {
         console.error('讀取統計資料失敗', err);
+        alert('讀取統計資料失敗，請稍後再試！');
       }
     }
 
