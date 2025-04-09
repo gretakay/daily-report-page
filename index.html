@@ -13,16 +13,12 @@
       text-align: center;
       padding: 2rem;
     }
-    h1 {
-      font-size: 2rem;
-      margin-bottom: 1.5rem;
-    }
     button {
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       margin: 0.5rem;
-      padding: 1rem 2rem;
+      padding: 0.8rem 1.5rem;
       border: none;
-      border-radius: 12px;
+      border-radius: 8px;
       background-color: #9fc5e8;
       cursor: pointer;
     }
@@ -30,192 +26,135 @@
       opacity: 0.5;
       cursor: not-allowed;
     }
-    #dharmaName {
-      font-size: 1.3rem;
-      padding: 0.5rem 1rem;
+    input {
+      font-size: 1.2rem;
+      padding: 0.5rem;
       border-radius: 8px;
       border: 1px solid #ccc;
       width: 250px;
-    }
-    #status {
-      margin-top: 1.5rem;
-      font-weight: bold;
     }
     canvas {
       max-width: 100%;
       margin: 1rem auto;
     }
-    .hidden {
-      display: none;
+    h1, h2, h3 {
+      margin-top: 1rem;
     }
-    label {
-      font-size: 1.1rem;
-      display: block;
-      margin: 1rem 0 0.5rem;
+    ol {
+      text-align: left;
+      display: inline-block;
+      padding-left: 1.5rem;
     }
   </style>
 </head>
 <body>
   <h1>每日用功回報</h1>
+  <label for="dharmaName">請輸入您的法名：</label><br>
+  <input type="text" id="dharmaName" placeholder="例如：傳愉" />
+  <button id="startBtn">開始</button>
 
-  <label for="dharmaName">請輸入您的法名：</label>
-  <input type="text" id="dharmaName" placeholder="例如：傳愉" autocomplete="off" name="no-auto">
-  <button id="startBtn">👉 開始回報</button>
-
-  <div id="buttons" class="hidden">
-    <button id="btn1" onclick="submitReport('誦經', this)">✅ 我今天有誦經3部</button>
-    <button id="btn2" onclick="submitReport('打坐', this)">✅ 我今天有打坐30分鐘</button>
-    <button id="btn3" onclick="submitReport('發願/反省', this)">✅ 我今天已發願反省</button>
+  <div id="reportButtons" style="margin-top: 1.5rem;">
+    <button data-item="誦經" onclick="submitReport('誦經', this)">我今天有誦經3部</button>
+    <button data-item="打坐" onclick="submitReport('打坐', this)">我今天有打坐30分鐘</button>
+    <button data-item="發願/反省" onclick="submitReport('發願/反省', this)">我今天已發願反省</button>
   </div>
 
-  <div id="status"></div>
-
-  <hr>
   <h2>📊 今日統計</h2>
   <canvas id="statsChart" width="400" height="200"></canvas>
 
   <h2>🏆 本週排行榜</h2>
-  <h3>誦經</h3>
-  <ol id="rank-誦經"></ol>
-  <h3>打坐</h3>
-  <ol id="rank-打坐"></ol>
-  <h3>發願/反省</h3>
-  <ol id="rank-發願/反省"></ol>
+  <h3>誦經</h3><ol id="rank-誦經"></ol>
+  <h3>打坐</h3><ol id="rank-打坐"></ol>
+  <h3>發願/反省</h3><ol id="rank-發願/反省"></ol>
 
   <script>
     const SHEET_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxFVmlvj2SB3t7Hm5D0R4XP8ZO_knH8UteqJIEYGxGGI-nOp3zOtj92H73cMZGSQbcuvQ/exec';
     const today = new Date().toISOString().split('T')[0];
 
-    let lastActiveTime = Date.now();
-    setInterval(() => {
-      if (Date.now() - lastActiveTime > 60 * 1000) {
-        location.reload();
-      }
-    }, 10000);
-
-    document.addEventListener('mousemove', () => lastActiveTime = Date.now());
-    document.addEventListener('keydown', () => lastActiveTime = Date.now());
-    document.addEventListener('click', () => lastActiveTime = Date.now());
-
-    document.getElementById('startBtn').addEventListener('click', async function () {
-      const dharmaName = document.getElementById('dharmaName').value.trim();
-      if (!dharmaName) return alert("請先輸入法名！");
-
-      document.getElementById('dharmaName').disabled = true;
-      this.disabled = true;
-      document.getElementById('buttons').classList.remove('hidden');
-
-      try {
-        const res = await fetch(SHEET_SCRIPT_URL + `?checkName=${encodeURIComponent(dharmaName)}`);
-        if (!res.ok) throw new Error('後端回應失敗');
-        const serverData = await res.json();
-
-        ['誦經', '打坐', '發願/反省'].forEach(item => {
-          const btn = [...document.querySelectorAll('#buttons button')].find(b => b.textContent.includes(item));
-          const key = `${today}:${dharmaName}:${item}`;
-
-          if (btn) {
-            btn.textContent = `✅ 我今天有${item}${item === '誦經' ? '3部' : item === '打坐' ? '30分鐘' : ''}`;
-            btn.disabled = false;
-          }
-
-          if ((serverData.reported || []).includes(item) || localStorage.getItem(key)) {
-            if (btn) {
-              btn.textContent = `✅ 已回報：${item}`;
-              btn.disabled = true;
-              localStorage.setItem(key, 'true');
-            }
-          }
-        });
-      } catch (err) {
-        console.error('無法同步後端資料', err);
-        alert('無法同步後端資料，請稍後再試！');
-      }
-    });
-
-    function submitReport(item, buttonEl) {
-      const dharmaName = document.getElementById('dharmaName').value.trim();
-      if (!dharmaName) return alert("請先輸入法名！");
-
-      const key = `${today}:${dharmaName}:${item}`;
-      if (localStorage.getItem(key)) {
-        alert("今天已經回報過「" + item + "」囉！");
-        return;
-      }
-
-      const payload = { name: dharmaName, item };
+    function submitReport(item, btn) {
+      const name = document.getElementById('dharmaName').value.trim();
+      if (!name) return alert("請先輸入法名");
 
       fetch(SHEET_SCRIPT_URL, {
         method: 'POST',
-        mode: 'cors',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, item })
       })
-      .then(res => {
-        if (!res.ok) throw new Error('後端回應失敗');
-        return res.json();
-      })
-      .then(data => {
-        if (data.status === 'DUPLICATE') {
-          alert('你今天已經回報過這項目囉！');
+      .then(res => res.text())
+      .then(text => {
+        const data = JSON.parse(text);
+        if (data.status === "DUPLICATE") {
+          alert("你已經回報過囉");
           return;
         }
-        if (data.status === 'OK') {
-          buttonEl.textContent = `✅ 已回報：${item}`;
-          buttonEl.disabled = true;
-          localStorage.setItem(key, 'true');
-          document.getElementById('status').textContent = `已回報：${item}`;
-          loadStats();
-        } else {
-          throw new Error(data.message || '未知錯誤');
-        }
-      })
-      .catch(err => {
-        console.error('回報失敗', err);
-        alert('回報失敗，請稍後再試！');
+        btn.disabled = true;
+        btn.textContent = `✅ 已回報：${item}`;
+        loadStats();
       });
     }
 
-    async function loadStats() {
-      try {
-        const res = await fetch(SHEET_SCRIPT_URL);
-        if (!res.ok) throw new Error('後端回應失敗');
-        const data = await res.json();
+    function checkReported() {
+      const name = document.getElementById('dharmaName').value.trim();
+      if (!name) return;
 
-        new Chart(document.getElementById('statsChart'), {
-          type: 'bar',
-          data: {
-            labels: ['誦經', '打坐', '發願/反省'],
-            datasets: [{
-              label: '今日人數',
-              data: [
-                data.stats['誦經'] || 0,
-                data.stats['打坐'] || 0,
-                data.stats['發願/反省'] || 0
-              ],
-              backgroundColor: ['#ffd966', '#93c47d', '#9fc5e8']
-            }]
-          }
-        });
-
-        ['誦經', '打坐', '發願/反省'].forEach(item => {
-          const list = document.getElementById(`rank-${item}`);
-          list.innerHTML = '';
-          (data.rankings[item] || []).forEach(entry => {
-            const li = document.createElement('li');
-            li.textContent = `${entry.name}：${entry.count} 次`;
-            list.appendChild(li);
+      fetch(SHEET_SCRIPT_URL + '?checkName=' + encodeURIComponent(name))
+        .then(res => res.text())
+        .then(text => {
+          const data = JSON.parse(text);
+          data.reported.forEach(item => {
+            const btn = document.querySelector(`button[data-item="${item}"]`);
+            if (btn) {
+              btn.disabled = true;
+              btn.textContent = `✅ 已回報：${item}`;
+            }
           });
         });
-      } catch (err) {
-        console.error('讀取統計資料失敗', err);
-        alert('讀取統計資料失敗，請稍後再試！');
-      }
     }
 
-    loadStats();
+    function loadStats() {
+      fetch(SHEET_SCRIPT_URL)
+        .then(res => res.text())
+        .then(text => {
+          const data = JSON.parse(text);
+          const ctx = document.getElementById('statsChart').getContext('2d');
+
+          if (window.myChart) window.myChart.destroy();
+
+          window.myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: ['誦經', '打坐', '發願/反省'],
+              datasets: [{
+                label: '今日人數',
+                data: [
+                  data.stats['誦經'] || 0,
+                  data.stats['打坐'] || 0,
+                  data.stats['發願/反省'] || 0
+                ],
+                backgroundColor: ['#ffd966', '#93c47d', '#9fc5e8']
+              }]
+            }
+          });
+
+          ['誦經', '打坐', '發願/反省'].forEach(item => {
+            const list = document.getElementById(`rank-${item}`);
+            list.innerHTML = '';
+            (data.rankings[item] || []).forEach(entry => {
+              const li = document.createElement('li');
+              li.textContent = `${entry.name}：${entry.count} 次`;
+              list.appendChild(li);
+            });
+          });
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('startBtn').addEventListener('click', () => {
+        checkReported();
+        loadStats();
+      });
+      loadStats(); // 首次載入排行榜與統計
+    });
   </script>
 </body>
 </html>
