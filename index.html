@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>每日用功回報</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -30,7 +30,7 @@
       opacity: 0.5;
       cursor: not-allowed;
     }
-    #username {
+    #dharmaName {
       font-size: 1.3rem;
       padding: 0.5rem 1rem;
       border-radius: 8px;
@@ -58,8 +58,8 @@
 <body>
   <h1>每日用功回報</h1>
 
-  <label for="username">請輸入您的法名：</label>
-  <input type="text" id="username" placeholder="例如：傳愉" autocomplete="off" name="no-auto">
+  <label for="dharmaName">請輸入您的法名：</label>
+  <input type="text" id="dharmaName" placeholder="例如：傳愉" autocomplete="off" name="no-auto">
   <button id="startBtn">👉 開始回報</button>
 
   <div id="buttons" class="hidden">
@@ -98,21 +98,21 @@
     document.addEventListener('click', () => lastActiveTime = Date.now());
 
     document.getElementById('startBtn').addEventListener('click', async function () {
-      const name = document.getElementById('username').value.trim();
-      if (!name) return alert("請先輸入名字！");
+      const dharmaName = document.getElementById('dharmaName').value.trim();
+      if (!dharmaName) return alert("請先輸入法名！");
 
-      document.getElementById('username').disabled = true;
+      document.getElementById('dharmaName').disabled = true;
       this.disabled = true;
       document.getElementById('buttons').classList.remove('hidden');
 
       try {
-        const res = await fetch(SHEET_SCRIPT_URL + `?checkName=${encodeURIComponent(name)}`);
+        const res = await fetch(SHEET_SCRIPT_URL + `?checkName=${encodeURIComponent(dharmaName)}`);
         if (!res.ok) throw new Error('後端回應失敗');
         const serverData = await res.json();
 
         ['誦經', '打坐', '發願/反省'].forEach(item => {
           const btn = [...document.querySelectorAll('#buttons button')].find(b => b.textContent.includes(item));
-          const key = `${today}:${name}:${item}`;
+          const key = `${today}:${dharmaName}:${item}`;
 
           if (btn) {
             btn.textContent = `✅ 我今天有${item}${item === '誦經' ? '3部' : item === '打坐' ? '30分鐘' : ''}`;
@@ -134,20 +134,16 @@
     });
 
     function submitReport(item, buttonEl) {
-      const name = document.getElementById('username').value.trim();
-      if (!name) return alert("請先輸入名字！");
+      const dharmaName = document.getElementById('dharmaName').value.trim();
+      if (!dharmaName) return alert("請先輸入法名！");
 
-      const key = `${today}:${name}:${item}`;
+      const key = `${today}:${dharmaName}:${item}`;
       if (localStorage.getItem(key)) {
         alert("今天已經回報過「" + item + "」囉！");
         return;
       }
 
-      const payload = {
-        name: name,
-        item: item,
-        timestamp: new Date().toISOString()
-      };
+      const payload = { name: dharmaName, item };
 
       fetch(SHEET_SCRIPT_URL, {
         method: 'POST',
@@ -159,17 +155,22 @@
       })
       .then(res => {
         if (!res.ok) throw new Error('後端回應失敗');
-        return res.text();
+        return res.json();
       })
-      .then(text => {
-        if (text === 'DUPLICATE') {
+      .then(data => {
+        if (data.status === 'DUPLICATE') {
           alert('你今天已經回報過這項目囉！');
           return;
         }
-        buttonEl.textContent = `✅ 已回報：${item}`;
-        buttonEl.disabled = true;
-        localStorage.setItem(key, 'true');
-        document.getElementById('status').textContent = `已回報：${item}`;
+        if (data.status === 'OK') {
+          buttonEl.textContent = `✅ 已回報：${item}`;
+          buttonEl.disabled = true;
+          localStorage.setItem(key, 'true');
+          document.getElementById('status').textContent = `已回報：${item}`;
+          loadStats();
+        } else {
+          throw new Error(data.message || '未知錯誤');
+        }
       })
       .catch(err => {
         console.error('回報失敗', err);
